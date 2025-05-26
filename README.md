@@ -1,4 +1,4 @@
-A scholastic project, done as part of a multiple-month challenge. 
+A scholastic project, originally done as part of a multiple-month challenge. 
 
 Available under MIT license, so you can do whatever you want with the code, sell it, whatever, as long as you don't delete credit.
 
