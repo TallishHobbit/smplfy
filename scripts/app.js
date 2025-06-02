@@ -1,7 +1,4 @@
 
-// For using REST API (Bug reporting and eventually RequireJS replacement)
-import { Octokit, App } from "https://esm.sh/octokit";
-
 requirejs.config({
   //By default load any module IDs from js/lib
   baseUrl: "scripts/lib",
@@ -198,7 +195,7 @@ function (  $,        phrases ) {
     }
   } // End annotate
 
-  //
+  // Allows users to submit bug reports
   async function createIssue() {
     await octokit.rest.issues.create( {
       owner: "TallishHobbit",
