@@ -1,3 +1,7 @@
+
+// For using REST API (Bug reporting and eventually RequireJS replacement)
+import { Octokit, App } from "https://esm.sh/octokit";
+
 requirejs.config({
   //By default load any module IDs from js/lib
   baseUrl: "scripts/lib",
@@ -15,7 +19,7 @@ requirejs.config({
 
 // Start the main app logic.
 requirejs(["jquery", "app/phrases"],
-function (  $,        phrases) {
+function (  $,        phrases ) {
   
   function addRow(event) {
     // Create the row
@@ -125,33 +129,36 @@ function (  $,        phrases) {
     $("#def-tbl-def").text( phraseObj.meaning );
   }
 
-  function addCategory(cat) {
+  function addCategory( cat ) {
     const category = $("<div></div>").attr("id", "def-tbl-cat");
     category.text( cat );
     
     $("#def-tbl").append(category);
   }
 
-  function annotateText(text) {
+  function annotateText( text ) {
     if ( text.length === 0 ) {
       return;
     }
 
+    // TODO: Update findMatches to only report the largest
+    // matched phrase at a given index (No overlaps)
     // Returns a list of match objects. "locations" contains index/span
     // objects of the match, and "lookup" the lookup obj from lookup.json
-    const matches = phrases.findMatches(text);
+    const matches = phrases.findMatches( text );
     
     const splitText = text.split(/[\s]+/g);
 
     // For every match
     for (let i = 0; i < matches.length; i++) {
-      const match = matches[i];
+      const match = matches[ i ];
       
       // For every matched index/span
-      for (let j = 0; j < match.locations.length; j++) {
-        const index = match.locations[j].index;
-        const span = match.locations[j].span;
+      for ( let j = 0; j < match.locations.length; j++ ) {
+        const index = match.locations[ j ].index;
+        const span = match.locations[ j ].span;
 
+        // TODO: Annotate as one
         // Annotate all words in the span individually
         for (let k = index; k < index + span; k++) {
           splitText[k] = annotate(splitText[k], match.lookup);
@@ -191,11 +198,24 @@ function (  $,        phrases) {
     }
   } // End annotate
 
+  //
+  async function createIssue() {
+    await octokit.rest.issues.create( {
+      owner: "tallishhobbit",
+      repo: "smplfy",
+      title: "Hello, world!",
+      body: "I created this issue using Octokit!",
+    } );
+  }
+
   // When the document has loaded, add event listeners
-  $(document).ready(function() {
+  $(document).ready( function() {
 
     // For setup
     // phrases.printNormalizedPhraseData();
+
+    // Create a generic issue (TESTING, TO BE REMOVED)
+    createIssue();
 
     $("#canvas").on("click", ".entry", function( event ) {
       addRow( event );
