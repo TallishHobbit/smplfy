@@ -201,11 +201,13 @@ function (  $,        phrases ) {
   //
   async function createIssue() {
     await octokit.rest.issues.create( {
-      owner: "tallishhobbit",
+      owner: "TallishHobbit",
       repo: "smplfy",
       title: "Hello, world!",
       body: "I created this issue using Octokit!",
     } );
+
+    console.log( "Generic issue created!" );
   }
 
   // When the document has loaded, add event listeners
