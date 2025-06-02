@@ -7,7 +7,10 @@
   
   <!-- data-main attribute tells require.js to load
        scripts/main.js after require.js loads. -->
-  <script data-main="scripts/app.js" src="scripts/require.js" type="module"></script>
+  <script data-main="scripts/app.js" src="scripts/require.js" type="module">
+    // For using REST API (Bug reporting and eventually RequireJS replacement)
+    import { Octokit } from "https://esm.sh/octokit";
+  </script>
 </head>
 
 <body>

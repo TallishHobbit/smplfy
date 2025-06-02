@@ -1,6 +1,4 @@
 
-// For using REST API (Bug reporting and eventually RequireJS replacement)
-import { Octokit } from "https://esm.sh/octokit";
 const octokit = new Octokit({  });
 
 requirejs.config({
