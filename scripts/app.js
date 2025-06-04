@@ -3,7 +3,7 @@
 import { Octokit } from "https://esm.sh/octokit";
 const octokit = new Octokit( {  } );
 
-import * as phrases from "./app/phrases.js";
+import * as Phrases from "./app/phrases.js";
 
 function addRow( event ) {
   // Create the row
@@ -46,7 +46,7 @@ function expandConnections(entry) {
   const full = [];
   const connections = entry.connections;
   for (let i = 0; i < connections.length; i++) {
-    const lookup = phrases.fetchLookup( connections[i].index );
+    const lookup = Phrases.fetchLookup( connections[i].index );
     full.push(lookup);
   }
 
@@ -68,7 +68,7 @@ function addEntry(lookupObj) {
   } else if ( notIncluded(lookupObj) ) {
     // Create the entry
     const newEntry = $("<div></div>").attr("class", "entry");
-    const real = phrases.fetch( lookupObj.index );
+    const real = Phrases.fetch( lookupObj.index );
     newEntry.text( real.phrase );
     newEntry.data( "lookup", lookupObj );
     $(".row").last().append(newEntry);
@@ -76,7 +76,7 @@ function addEntry(lookupObj) {
 } // End addEntry
 
 function notIncluded(lookupObj) {
-  const realPhrase = phrases.fetch( lookupObj.index ).phrase;
+  const realPhrase = Phrases.fetch( lookupObj.index ).phrase;
   let included = false;
 
   $(".entry").each( function() {
@@ -129,7 +129,7 @@ function annotateText( text ) {
   // matched phrase at a given index (No overlaps)
   // Returns a list of match objects. "locations" contains index/span
   // objects of the match, and "lookup" the lookup obj from lookup.json
-  const matches = phrases.findMatches( text );
+  const matches = Phrases.findMatches( text );
   
   const splitText = text.split(/[\s]+/g);
 
@@ -198,7 +198,7 @@ async function createIssue() {
 $(document).ready( function() {
 
   // For setup
-  // phrases.printNormalizedPhraseData();
+  // Phrases.printNormalizedPhraseData();
 
   // Create a generic issue (TESTING, TO BE REMOVED)
   createIssue();
@@ -209,7 +209,7 @@ $(document).ready( function() {
     const entry = $(event.target);
     if ( !entry.hasClass("doc-generated") ) {
       const index = entry.data().lookup.index;
-      const phraseData = phrases.fetch( index );
+      const phraseData = Phrases.fetch( index );
       displayPhrase( phraseData );
     }
 

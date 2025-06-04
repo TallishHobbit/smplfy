@@ -5,11 +5,10 @@
 * MIT License
 */
 
-import lem from "../lib/lemmatizer-v0.0.2.js";
-// TODO: Use fetch API to import JSON files
-
-// define(["lemmatizer", "json!src/phrases.json", "json!src/lookup.json"], 
-// function(lem,          phraseData,              lookupData) {
+// TODO: Remove lemmatizer dependency / update lookup accordingly
+import lem from "./lib/lemmatizer-v0.0.2.js";
+import phraseData from "./src/phrases.json" with { type: "json" };
+import lookupData from "./src/lookup.json" with { type: "json" };
 
 // Initialize the lemmatizer (See licensing in lemmatizer-v0.0.2.js)
 const lemmatizer = new lem.Lemmatizer();
@@ -175,6 +174,47 @@ function printNormalizedPhraseData() {
   console.log(`[\n  ${data.join(",\n  ")}\n]`); // FUNCTION-RELATED LOG. DO NOT DELETE.
 } // End of pNPD
 
+/**
+ * Finds the "raw" or not-word-based index of things
+ * @param {Object} lookup - The lookup you want to check for
+ * @param {String} reference - Where you want to search for things
+ * @param {int} index - The starting index of the search. Defaults to 0.
+ * @return {Array} - A list of indices / what was checked as objects
+ */
+function searchForXInY( lookup, reference, index = 0 ) {
+  const indices = [];
+
+  // I didn't properly lowercase the phrase or category, so...
+  let things = [ lookup.lemmas[0].toLowerCase() ];
+  let hasAcronyms = false;
+  let hasCategory = false;
+
+  if ( Object.hasOwn(lookup, "acronyms") ) {
+    things = things.concat( lookup.acronyms );
+    hasAcronyms = true;
+  }
+  // If it has a category
+  if ( lookup.lemmas.length > 2 ) {
+    things = things.concat( lookup.lemmas[2].toLowerCase() );
+    hasCategory = true;
+  }
+
+  // Check if any "thing" appears in the reference text.
+  // Save the index and what it was
+  for (let i = 0; i < things.length; i++) {
+    const iOf = reference.indexOf(things[i], index);
+    
+    if ( iOf > -1 ) {
+      indices.push({
+        "index": iOf,
+        "thing": things[i]
+      });
+    }
+  } // End things loop
+  
+  return indices;
+}
+
 // **************************************************
 // Public
 // **************************************************
@@ -279,7 +319,7 @@ function findMatches( text ) {
   // Replace all punctuation with a single random letter, just as long as it
   // won't create false positives. This allows ctrl+A pastes from Hades like
   // https://doi.nv.gov/uploadedFiles/doinvgov/_public-documents/Consumers/AU127-1.pdf
-  // to avoid the definitions being offset. Welcome to stress testing.
+  // to avoid the annotations being offset. THIS is bad design.
   text = text.replaceAll(/[,.()\/]/g, "x");
 
   // Replace all non-contained ' with x, too
@@ -354,63 +394,18 @@ function findMatches( text ) {
     }
   } // End lookup loop
 
-  console.log( "nDNormalized Text: " + text );
+  // console.log( "nDNormalized Text: " + text );
 
   return matches;
 } // End findMatches
 
-/**
- * Finds the "raw" or not-word-based index of things
- * @param {Object} lookup - The lookup you want to check for
- * @param {String} reference - Where you want to search for things
- * @param {int} index - The starting index of the search. Defaults to 0.
- * @return {Array} - A list of indices / what was checked as objects
- */
-function searchForXInY( lookup, reference, index) {
-  const indices = [];
-
-  // I didn't properly lowercase the phrase or category, so...
-  let things = [ lookup.lemmas[0].toLowerCase() ];
-  let hasAcronyms = false;
-  let hasCategory = false;
-
-  if ( Object.hasOwn(lookup, "acronyms") ) {
-    things = things.concat( lookup.acronyms );
-    hasAcronyms = true;
-  }
-  // If it has a category
-  if ( lookup.lemmas.length > 2 ) {
-    things = things.concat( lookup.lemmas[2].toLowerCase() );
-    hasCategory = true;
-  }
-
-  for (let i = 0; i < things.length; i++) {
-    
-    // console.log( "Checking this thing: " + JSON.stringify(things[i]) );
-
-    const iOf = reference.indexOf(things[i], index);
-    
-    if ( iOf > -1 ) {
-      indices.push({
-        "index": iOf,
-        "thing": things[i]
-      });
-    }
-  } // End things loop
-
-  // console.log("Indices: " + JSON.stringify(indices));
-  
-  return indices;
-}
-
 export default {
-  "phrasesLength" : phraseData.length,
-  "fetchPhrase"   : fetchPhrase,
-  "lookupLength"  : lookupData.length,
-  "fetchLookup"   : fetchLookup,
-  "nonDestructiveNormalize": nonDestructiveNormalize,
-  "pickyNormalize": pickyNormalize,
-  // Shhhhh. I didn't want to learn file editing
-  // "printNormalizedPhraseData": printNormalizedPhraseData,
-  "findMatches"   : findMatches,
+  "phrasesLength": phraseData.length,
+  "lookupLength" : lookupData.length,
+  // printNormalizedPhraseData,          // Used for setup
+  fetchPhrase,
+  fetchLookup,
+  nonDestructiveNormalize,
+  pickyNormalize,
+  findMatches,
 };
