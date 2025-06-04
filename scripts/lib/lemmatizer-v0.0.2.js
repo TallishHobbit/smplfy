@@ -8,10 +8,10 @@
 import _ from "./underscore-umd-min.js"; // Added for UnderscoreJS dependency, 25/03/2025
 import adjExc from "./dict/adj.exc.json" with { type: "json" };
 import advExc from "./dict/adv.exc.json" with { type: "json" };
-import indexAdj from "./dict/index.exc.json" with { type: "json" };
-import indexAdv from "./dict/index.exc.json" with { type: "json" };
-import indexNoun from "./dict/index.exc.json" with { type: "json" };
-import indexVerb from "./dict/index.exc.json" with { type: "json" };
+import indexAdj from "./dict/index.adj.json" with { type: "json" };
+import indexAdv from "./dict/index.adv.json" with { type: "json" };
+import indexNoun from "./dict/index.noun.json" with { type: "json" };
+import indexVerb from "./dict/index.verb.json" with { type: "json" };
 import nounExc from "./dict/noun.exc.json" with { type: "json" };
 import verbExc from "./dict/verb.exc.json" with { type: "json" };
 
