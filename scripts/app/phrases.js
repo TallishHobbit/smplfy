@@ -6,9 +6,9 @@
 */
 
 // TODO: Remove lemmatizer dependency / update lookup accordingly
-import lem from "./lib/lemmatizer-v0.0.2.js";
-import phraseData from "./src/phrases.json" with { type: "json" };
-import lookupData from "./src/lookup.json" with { type: "json" };
+import lem from "../lib/lemmatizer-v0.0.2.js";
+import phraseData from "../src/phrases.json" with { type: "json" };
+import lookupData from "../src/lookup.json" with { type: "json" };
 
 // Initialize the lemmatizer (See licensing in lemmatizer-v0.0.2.js)
 const lemmatizer = new lem.Lemmatizer();
