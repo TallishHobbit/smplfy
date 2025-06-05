@@ -5,7 +5,7 @@
 * by Takafumi Yamano
 */
 
-import _ from "./underscore-umd-min.js"; // Added for UnderscoreJS dependency, 25/03/2025
+import * as _ from "./underscore-umd-min.js"; // Added for UnderscoreJS dependency, 25/03/2025
 import adjExc from "./dict/adj.exc.json" with { type: "json" };
 import advExc from "./dict/adv.exc.json" with { type: "json" };
 import indexAdj from "./dict/index.adj.json" with { type: "json" };
