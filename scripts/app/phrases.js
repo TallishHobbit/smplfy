@@ -5,13 +5,8 @@
 * MIT License
 */
 
-// TODO: Remove lemmatizer dependency / update lookup accordingly
-import lem from "../lib/lemmatizer-v0.0.2.js";
 import phraseData from "../src/phrases.json" with { type: "json" };
 import lookupData from "../src/lookup.json" with { type: "json" };
-
-// Initialize the lemmatizer (See licensing in lemmatizer-v0.0.2.js)
-const lemmatizer = new lem.Lemmatizer();
 
 // **************************************************
 // Internal/Private (Not included in return statement)
@@ -24,34 +19,27 @@ Array.prototype.remove = function(index) {
 }
 
 /*
-  * Check if a string is an acronym
+  * Check if a given string is an acronym
   * Explanation:
   *   From the start of the string to the end, ("^" to "$")
   *   check if there are at least 2 ("{2,}")
   *   valid acronym characters ("[A-Z&]")
   */
 String.prototype.isAcronym = function() {
-  return (/^[A-Z&]{2,}$/).test(this);
+  return ( /^[A-Z&]{2,}$/ ).test( this );
 }
 
 /**
  * Removes all acronyms from an Array of words
  * @param {Array} arr - A list potentially containing acronyms
  * @return {void} - All changes to arr are automatically applied
- * Didn't need to be an extension, just looks better this way
  */
-function removeAcronyms(arr) {
-  let length = arr.length;
-  let i = 0;
-  while (i < length) {
-    if (arr[i].isAcronym()) {
-      arr.remove(i);
-      // Element i has been removed, so the next element also has index i
-    } else { // Not an acronym
-      i++;
+function removeAcronyms( arr ) {
+  for ( let i = arr.length; i >= 0; i-- ) {
+    if ( arr[i].isAcronym() ) {
+      arr.remove( i );
     }
-    length = arr.length;
-  } // End of loop
+  }
 } // End of removeAcronyms
 
 /**
@@ -76,6 +64,7 @@ function generateConnections(phrases) {
       
       const other = phrases[j];
 
+      // TODO: Refactor into functions, geez
       // If any are true, a connection would be made. Better than a massive "or".
       if ( (Object.hasOwn(curr, "acronyms") && Object.hasOwn(other, "acronyms"))     // If they have matching
       && ( curr.acronyms.some((acr) => other.acronyms.includes(acr))                 // acronyms, connect them.
@@ -169,9 +158,9 @@ function printNormalizedPhraseData() {
   }
   
   // Convert every element to JSON text
-  const data = lookup.map((datum) => JSON.stringify(datum));
+  const data = lookup.map( (datum) => JSON.stringify(datum) );
   
-  console.log(`[\n  ${data.join(",\n  ")}\n]`); // FUNCTION-RELATED LOG. DO NOT DELETE.
+  console.log(`[\n  ${ data.join(",\n  ") }\n]`); // FUNCTION-RELATED LOG. DO NOT DELETE.
 } // End of pNPD
 
 /**
@@ -220,66 +209,21 @@ function searchForXInY( lookup, reference, index = 0 ) {
 // **************************************************
 
 /**
- * Normalizes the given fragment by removing any features that are potentially ever-so-slightly different
- * @param {String} text - A string that may contain some punctuation, which is to be removed
- * @return {String} - The original text, sans acronyms, punctuation, capitalization, and alternate word forms
+ * Normalizes the given text, removing capitalization and punctuation
+ * @param {String} text - 
+ * @return {String} - The normalized text
  */
-function pickyNormalize(text) {
+function normalize( text ) {
   // Remove all punctuation
-  text = text.replaceAll(/[\W\S_]+/g, "");
+  text = text.replaceAll( /[\[\],.()\/\\\'\"]/g, "" );
   
   // Make an array of all the words, without surrounding spaces
-  const words = text.split(/[\s]+/);
-  words.map((each) => each.trim()); // Redundancy is key when you don't know what you are doing
-  
-  removeAcronyms(words);
-
-  // Remove capitalization for all words
-  const capNormalized = words.map((word) => word.toLowerCase()); // Arrow notation for the win!
-  
-  // Get one lemma for each word (Only ever choosing the first lemma should be fine, right?)
-  const normalized = capNormalized.map((word) => lemmatizer.only_lemmas(word)[0]); // ".only_lemmas" returns a list
-
-  // Return the line, a string once more
-  return normalized.join(" ").trim();
-}
-
-/**
- * Normalizes the given text, saving acronyms and other meaningful word strings
- * @param {String} text - A string that may contain some punctuation, which is to be ignored
- * @return {String} - The original text, sans capitalization, punctuation, and alternate word forms
- */
-function nonDestructiveNormalize(text) {
-  // Remove all punctuation
-  text = text.replaceAll(/[,.()\/']/g, "");
-  
-  // Make an array of all the words, without surrounding spaces
-  const words = text.split(/[\s]+/);
+  const words = text.split(/\s+/);
   const trimmed = words.map((each) => each.trim()); // Redundancy is key when you don't know what you are doing
 
-  // Remove capitalization for all words except acronyms
-  const capNormalized = trimmed.map((word) => {
-    if (word.isAcronym()) {
-      return word;
-    }
+  // Remove capitalization for all words
+  const normalized = trimmed.map( (word) => {
     return word.toLowerCase();
-  } );
-  
-  // Get one lemma for each word (Only ever choosing the first lemma should be fine, right?)
-  const normalized = capNormalized.map( (word) => {
-    const normWord = lemmatizer.only_lemmas( word )[0]; // ".only_lemmas" returns a list
-    
-    // Acronyms are always to be left as is, and
-    // Lemmatizer tends to delete one letter words,
-    // of which there aren't many, but this is cleaner.
-    // Shorter words in general aren't treated well,
-    // hence the extra check.
-    if ( word.isAcronym() || word.length == 1 
-    || normWord === undefined || normWord.length == 0 || normWord.valueOf() == " " ) {
-      return word;
-    }
-    // Otherwise, it's business as usual
-    return normWord;
   } );
 
   // Return the line, a string once more
@@ -320,12 +264,8 @@ function findMatches( text ) {
   // won't create false positives. This allows ctrl+A pastes from Hades like
   // https://doi.nv.gov/uploadedFiles/doinvgov/_public-documents/Consumers/AU127-1.pdf
   // to avoid the annotations being offset. THIS is bad design.
-  text = text.replaceAll(/[,.()\/]/g, "x");
 
-  // Replace all non-contained ' with x, too
-  text = text.replaceAll(/([\s](')|(')[\s]){1}/g, "x");
-
-  text = nonDestructiveNormalize( text );
+  text = normalize( text );
   
   const matches = [];
 
