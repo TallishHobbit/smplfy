@@ -5,8 +5,6 @@
 * MIT License
 */
 
-// TODO: Move all annotation functionality here.
-
 import phraseData from "../src/phrases.json" with { type: "json" };
 import lookupData from "../src/lookup.json" with { type: "json" };
 
@@ -345,5 +343,5 @@ export default {
   fetchPhrase,
   fetchLookup,
   normalize,
-  findMatches,
+  findMatches
 };
