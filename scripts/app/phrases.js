@@ -45,44 +45,73 @@ function removeAcronyms( arr ) {
 } // End of removeAcronyms
 
 /**
+ * Checks if 2 lookups have any acronyms in common in any way
+ * @param {Object} lookup1 - A lookup potentially containing acronyms
+ * @param {Object} lookup2 - A lookup potentially containing acronyms
+ * @return {boolean} Whether they have any acronyms contained in the other
+ */
+function shareAnyAcronyms( lookup1, lookup2 ) {
+  // They can only have acronyms in common if they both have acronyms
+  if ( !Object.hasOwn(lookup1, "acronyms") 
+    || !Object.hasOwn(lookup2, "acronyms") ) {  
+    return false;
+  }
+
+  return lookup1.acronyms.some( (acr) => other.acronyms.includes(acr) );
+}
+
+/**
+ * Checks if 2 lookups mention the other's phrase or category
+ * @param {Object} lookup1 - A lookup Obj
+ * @param {Object} lookup2 - The same.
+ * @return {boolean} Any mentions?
+ */
+function containsTheOther( lookup1, lookup2 ) {
+  // For each lemma in both lookups, check if they match
+  // or are contained in the other.
+  for ( let i = 0; i < lookup1.lemmas.length; i++ ) {
+    currLemma1 = lookup1.lemmas[ i ];
+
+    for ( let j = 0; j < lookup2.lemmas.length; j++ ) {
+      currLemma2 = lookup2.lemmas[ j ];
+
+      if ( currLemma1.includes(currLemma2)
+      ||   currLemma2.includes(currLemma1) ) {
+        return true;
+      }
+    }
+  }
+
+  // If none matched / were contained
+  return false;
+}
+
+/**
  * Searches for all first-degree connections between phrases
- * @param {Array} phrases - A list of lookup objects
+ * @param {Array} lookups - A list of lookup objects
  * @return {void} - All changes to the objects are automatically applied
  */
-function generateConnections(phrases) {
-  const phrase = 0;
-  const meaning = 1;
-  const category = 2;
+function generateConnections( lookups ) {
   
-  for (let i = 0; i < phrases.length; i++) {
-    const curr = phrases[i];
+  for (let i = 0; i < lookups.length; i++) {
+    const curr = lookups[i];
     const connections = [];
 
-    for (let j = 0; j < phrases.length; j++) {
+    for (let j = 0; j < lookups.length; j++) {
       // Don't execute on curr
       if (i === j) {
         continue;
       }
       
-      const other = phrases[j];
+      const other = lookups[j];
 
-      // TODO: Refactor into functions, geez
-      // If any are true, a connection would be made. Better than a massive "or".
-      if ( (Object.hasOwn(curr, "acronyms") && Object.hasOwn(other, "acronyms"))     // If they have matching
-      && ( curr.acronyms.some((acr) => other.acronyms.includes(acr))                 // acronyms, connect them.
-      || other.acronyms.includes(curr.lemmas[phrase]) ) ) {                          // Phrase might be there, too
-        connections.push({ "index": j });
-      } else if ( curr.lemmas[meaning].includes(other.lemmas[phrase])                // Or if either phrase is
-      || other.lemmas[meaning].includes(curr.lemmas[phrase]) ) {                     // in the other's meaning
-        connections.push({ "index": j });
-      } else if ( (curr.lemmas.length > 2 && other.lemmas.length > 2)                // Or if they have
-      && (curr.lemmas[category] == other.lemmas[category]) ) {                       // matching categories
-        connections.push({ "index": j });
-      } // End of "if" brick
+      if ( shareAnyAcronyms(curr, other) || containsTheOther(curr, other) ) {
+        connections.push( { "index": j } );
+      }
     } // end other loop
 
     if (connections.length > 0) {
-      // Add the actual phrase to each of the connections
+      // Add the actual phrase to each of the connections (for tree view)
       for (let k = 0; k < connections.length; k++) {
         const cnctn = connections[k];
         cnctn.phrase = phraseData[cnctn.index].phrase;
@@ -97,15 +126,15 @@ function generateConnections(phrases) {
  * @param {Object} entry - A lookup object
  * @return {Number} - the calculated relevance
  */
-function calcRelevance(entry) {
+function calcRelevance( entry ) {
   // Not a true comparison of relevance, but close enough.
   let relevance = entry.lemmas.length;
   
-  if (Object.hasOwn(entry, "acronyms")) {
+  if ( Object.hasOwn(entry, "acronyms") ) {
     relevance += entry.acronyms.length;
   }
   
-  if (Object.hasOwn(entry, "connections")) {
+  if ( Object.hasOwn(entry, "connections") ) {
     relevance += entry.connections.length;
   }
 
@@ -120,90 +149,99 @@ function printNormalizedPhraseData() {
   const lookup = [];
 
   // Run for all phrases
-  for (let i = 0; i < phraseData.length; i++) {
+  for ( let i = 0; i < phraseData.length; i++ ) {
     // Get the current phrase, instantiate object
-    const entry = phraseData[i];
+    const entry = phraseData[ i ];
     const lookupObj = {};
 
-    // Lemmatize almost all info
     const lemms = [];
-
-    // If the phrase is/contains an acronym, don't normalize the acronym
-    lemms.push( nonDestructiveNormalize(entry.phrase) );
-
-    lemms.push( pickyNormalize(entry.meaning) );
+    lemms.push( normalize(entry.phrase) );
+    lemms.push( normalize(entry.meaning) );
 
     // Only if category exists
-    if (Object.hasOwn(entry, "category")) {
-      lemms.push( pickyNormalize(entry.category) );
+    if ( Object.hasOwn(entry, "category") ) {
+      lemms.push( normalize(entry.category) );
     }
 
     lookupObj.lemmas = lemms;
 
     // Add acronyms, if applicable
-    if (Object.hasOwn(entry, "acronyms")) {
+    if ( Object.hasOwn(entry, "acronyms") ) {
       lookupObj.acronyms = entry.acronyms;
     }
 
+    // Save the index for the connection tree view
     lookupObj.index = i;
     
-    lookup.push(lookupObj);
+    lookup.push( lookupObj );
   } // End of for
 
   // This'll take a while, but I don't know enough
   // big O to tell you just how inefficient it is.
-  generateConnections(lookup);
+  generateConnections( lookup );
 
-  for (let i = 0; i < lookup.length; i++) {
-    const curr = lookup[i];
-    curr.relevance = calcRelevance(curr);
+  // Add a relevance score
+  for ( let i = 0; i < lookup.length; i++ ) {
+    const curr = lookup[ i ];
+    curr.relevance = calcRelevance( curr );
   }
   
-  // Convert every element to JSON text
+  // Convert every element to JSON text and print
   const data = lookup.map( (datum) => JSON.stringify(datum) );
-  
-  console.log(`[\n  ${ data.join(",\n  ") }\n]`); // FUNCTION-RELATED LOG. DO NOT DELETE.
+  console.log( `[\n  ${ data.join(",\n  ") }\n]` ); // FUNCTION-RELATED LOG. DO NOT DELETE.
 } // End of pNPD
 
 /**
- * Finds the "raw" or not-word-based index of things
- * @param {Object} lookup - The lookup you want to check for
- * @param {String} reference - Where you want to search for things
- * @param {int} index - The starting index of the search. Defaults to 0.
- * @return {Array} - A list of indices / what was checked as objects
+ * Finds the index for all occurences of lookup information in a text
+ * @param {Object} lookup - The lookup entry you want to check for
+ * @param {String} text - Where you want to search for things
+ * @return {Array} A list of indices / what was checked as objects
  */
-function searchForXInY( lookup, reference, index = 0 ) {
-  const indices = [];
+function searchForReferences( lookup, text ) {
+  
+  const thingsMatched = [];
 
-  // I didn't properly lowercase the phrase or category, so...
-  let things = [ lookup.lemmas[0].toLowerCase() ];
+  let thingsToCheck = [ lookup.lemmas[0] ];
   let hasAcronyms = false;
   let hasCategory = false;
 
   if ( Object.hasOwn(lookup, "acronyms") ) {
-    things = things.concat( lookup.acronyms );
+    thingsToCheck = thingsToCheck.concat( lookup.acronyms );
     hasAcronyms = true;
   }
   // If it has a category
   if ( lookup.lemmas.length > 2 ) {
-    things = things.concat( lookup.lemmas[2].toLowerCase() );
+    thingsToCheck.push( lookup.lemmas[2] );
     hasCategory = true;
   }
 
-  // Check if any "thing" appears in the reference text.
-  // Save the index and what it was
-  for (let i = 0; i < things.length; i++) {
-    const iOf = reference.indexOf(things[i], index);
+  // Check if any "thing" appears in the text text.
+  // Save the indices and other information.
+  for ( let i = 0; i < thingsToCheck.length; i++ ) {
+    let currThing = thingsToCheck[ i ];
+    let thingLength = currThing.length;
+
+    const thingMatches = {
+      "matched": currThing,
+      "indices": [],
+      "span"   : currThing.length
+    }
+
+    // Find all locations of that thing in the text
+    let idxOfThing = text.indexOf( currThing );
+    while ( idxOfThing > -1 ) {
+      thingMatches.indices.push( idxOfThing );
+
+      // Make sure to skip past the occurence just located
+      idxOfThing = text.indexOf( currThing, idxOfThing + thingLength );
+    }
     
-    if ( iOf > -1 ) {
-      indices.push({
-        "index": iOf,
-        "thing": things[i]
-      });
+    if ( thingMatches.indices.length > 0 ) {
+      thingsMatched.push( thingMatches );
     }
   } // End things loop
   
-  return indices;
+  return thingsMatched;
 }
 
 // **************************************************
@@ -212,20 +250,22 @@ function searchForXInY( lookup, reference, index = 0 ) {
 
 /**
  * Normalizes the given text, removing capitalization and punctuation
- * @param {String} text - 
- * @return {String} - The normalized text
+ * @param {String} text
+ * @return {String} The normalized text
  */
 function normalize( text ) {
-  // Remove all punctuation
-  text = text.replaceAll( /[\[\],.()\/\\\'\"]/g, "" );
+  // Remove all punctuation and 's-s
+  text = text.replaceAll( /([\[\],.()\/\\\'\"]||\'s)/g, "" );
   
   // Make an array of all the words, without surrounding spaces
-  const words = text.split(/\s+/);
-  const trimmed = words.map((each) => each.trim()); // Redundancy is key when you don't know what you are doing
+  const words = text.split( /\s+/ );
+  // Redundancy is key when you don't know what you are doing
+  const trimmed = words.map( (each) => each.trim() );
 
-  // Remove capitalization for all words
+  // Remove capitalization for all words except acronyms
   const normalized = trimmed.map( (word) => {
-    return word.toLowerCase();
+    if ( !word.isAcronym() ) { return word.toLowerCase(); }
+    else { return word; }
   } );
 
   // Return the line, a string once more
@@ -237,8 +277,8 @@ function normalize( text ) {
  * @param {int} index - The index of the phrase to be fetched in lookup.json (NOT index attr)
  * @return {Object} - The lookup object at that index
  */
-function fetchLookup(index) {
-  return lookupData[index];
+function fetchLookup( index ) {
+  return lookupData[ index ];
 }
 
 /**
@@ -246,87 +286,44 @@ function fetchLookup(index) {
  * @param {int} index - The index of the phrase to be fetched in phrases.json 
  * @return {Object} - The phrase object at that index
  */
-function fetchPhrase(index) {
-  return phraseData[index];
+function fetchPhrase( index ) {
+  return phraseData[ index ];
 }
 
 /**
  * Finds all matching phrases in the database
- * @param {string} text - The text to be parsed for phrases
- * @return {Object} - A list of match objects, set up as follows
+ * @param {string} text - The normalized text to be parsed for phrases
+ * @return {Array} - A list of match objects, set up as follows
  *   lookup: The matched phrase in lookup.json
  *   locations: A list of objects
- *     index: the starting index of the match in text,
- *            split on whitespace. 
- *     span: how many split-on-whitespace-elements the match covers
+ *     index: the starting index of the match in text
+ *     span: how many letters the match covers
  */
 function findMatches( text ) {
-  // Hackiest solution yet. You have been warned.
-  // Replace all punctuation with a single random letter, just as long as it
-  // won't create false positives. This allows ctrl+A pastes from Hades like
-  // https://doi.nv.gov/uploadedFiles/doinvgov/_public-documents/Consumers/AU127-1.pdf
-  // to avoid the annotations being offset. THIS is bad design.
-
-  text = normalize( text );
   
   const matches = [];
 
-  for (let i = 0; i < lookupData.length; i++) {
-    const currLookup = lookupData[i];
+  // For each lookup,
+  for (let lookupIdx = 0; lookupIdx < lookupData.length; lookupIdx++) {
+    const currLookup = lookupData[ lookupIdx ];
 
     const locations = [];
 
-    const rawIndices = searchForXInY(currLookup, text);
-    // While anything is found
-    while ( rawIndices.length > 0 ) {
-      // Save the first place something matched at
-      let firstThing = rawIndices[0];
-      for (let j = 1; j < rawIndices.length; j++) {
-        if (rawIndices[j].index < firstThing.index) {
-          firstThing = rawIndices[j];
-        }
+    // Find all occurences of lookup information
+    let matchBatch = searchForReferences( currLookup, text );
+    
+    // Save each occurence as a separate location
+    for ( let matchIdx = 0; matchIdx < matchBatch.length; matchIdx++ ) {
+      let currMatch = matchBatch[ matchIdx ];
+
+      // Loop through all indices to save individually
+      for ( let i = 0; i < currMatch.indices.length; i++ ) {
+        locations.push( {
+          "index": currMatch.indices[ i ],
+          "span" : currMatch.span
+        } );
       }
-
-      // console.log( "First thing: " + JSON.stringify(firstThing.thing) );
-
-      // Save the location, relative to splits at spaces
-      const span = firstThing.thing.split(/[\s]+/g).length;
-
-      // console.log("    With a span of " + span);
-
-      // Get everything, including the matching thing
-      const textUpToThing = text.substring(0, firstThing.index + firstThing.thing.length);
-      const splitAtSpaces = textUpToThing.split( /[\s]+/g );
-      // Remove empty strings
-      for (let j = 0; j < splitAtSpaces.length; ) {
-        if ( splitAtSpaces[j].valueOf() == "" ) {
-          splitAtSpaces.remove(j);
-        } else {
-          j++;
-        }
-      }
-      
-      
-      // If sAS contains the entire text up to / including the match,
-      // then the number of words (space-separated non-empty strings)
-      // is "span" more than the index of the match.
-      let index = splitAtSpaces.length - span;
-
-      // console.log("    At word index " + index);
-
-      locations.push( {
-        "index": index,
-        "span": span
-      } );
-
-      // Clear the list
-      rawIndices.splice(0, rawIndices.length);
-      // Add the next search
-      const nextResults = searchForXInY(currLookup, text, firstThing.index + firstThing.thing.length);
-      for (let j = 0; j < nextResults.length; j++) {
-        rawIndices.push( nextResults[j] );
-      }
-    } // End location loop
+    }
     
     if ( locations.length > 0 ) {
       matches.push( {
@@ -344,10 +341,9 @@ function findMatches( text ) {
 export default {
   "phrasesLength": phraseData.length,
   "lookupLength" : lookupData.length,
-  // printNormalizedPhraseData,          // Used for setup
+  printNormalizedPhraseData,          // Used for setup
   fetchPhrase,
   fetchLookup,
-  nonDestructiveNormalize,
-  pickyNormalize,
+  normalize,
   findMatches,
 };
