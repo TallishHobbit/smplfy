@@ -1,7 +1,7 @@
 
 // For using REST API (Bug reporting and eventually RequireJS replacement)
-import { Octokit } from "https://esm.sh/octokit";
-const octokit = new Octokit( {  } );
+// import { Octokit } from "https://esm.sh/octokit";
+// const octokit = new Octokit( {  } );
 
 import * as Phrases from "./app/phrases.js";
 
@@ -125,13 +125,11 @@ function annotateText( text ) {
     return;
   }
 
-  // TODO: Update findMatches to only report the largest
+  // TODO: Update generateAnotationData to only report the largest
   // matched phrase at a given index (No overlaps)
   // Returns a list of match objects. "locations" contains index/span
   // objects of the match, and "lookup" the lookup obj from lookup.json
-  const matches = Phrases.findMatches( text );
-  
-  const splitText = text.split(/[\s]+/g);
+  const matches = Phrases.generateAnnotationData( text );
 
   // For every match
   for (let i = 0; i < matches.length; i++) {
@@ -139,8 +137,7 @@ function annotateText( text ) {
     
     // For every matched index/span
     for ( let j = 0; j < match.locations.length; j++ ) {
-      const index = match.locations[ j ].index;
-      const span = match.locations[ j ].span;
+      const currLocation = match.locations[ j ];
 
       // TODO: Annotate as one
       // Annotate all words in the span individually
@@ -164,7 +161,7 @@ function annotateText( text ) {
   }
 } // End annotateText
 
-function annotate(thing, lookupObj) {
+function annotate( thing, lookupObj ) {
   // If it has already been annotated, add another
   if ( typeof thing === "object" ) {
     thing.data().phrases.push(lookupObj);
@@ -182,26 +179,26 @@ function annotate(thing, lookupObj) {
   }
 } // End annotate
 
-// Allows users to submit bug reports
-async function createIssue() {
-  await octokit.rest.issues.create({
-    owner: "TallishHobbit",
-    repo: "smplfy",
-    title: "Hello, world!",
-    body: "I created this issue using Octokit!"
-  });
+// // Allows users to submit bug reports
+// async function createIssue() {
+//   await octokit.rest.issues.create({
+//     owner: "TallishHobbit",
+//     repo: "smplfy",
+//     title: "Hello, world!",
+//     body: "I created this issue using Octokit!"
+//   });
 
-  console.log( "Generic issue created!" );
-}
+//   console.log( "Generic issue created!" );
+// }
 
 // When the document has loaded, add event listeners
 $(document).ready( function() {
 
   // For setup
-  // Phrases.printNormalizedPhraseData();
+  Phrases.printNormalizedPhraseData();
 
   // Create a generic issue (TESTING, TO BE REMOVED)
-  createIssue();
+  // createIssue();
 
   $("#canvas").on("click", ".entry", function( event ) {
     addRow( event );

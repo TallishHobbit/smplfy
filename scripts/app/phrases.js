@@ -30,16 +30,21 @@ String.prototype.isAcronym = function() {
 }
 
 /**
- * Removes all acronyms from an Array of words
- * @param {Array} arr - A list potentially containing acronyms
- * @return {void} - All changes to arr are automatically applied
+ * Uncapitalizes everything but acronyms
+ * @param {String} str - A string potentially containing acronyms
+ * @return {String}
  */
-function removeAcronyms( arr ) {
-  for ( let i = arr.length; i >= 0; i-- ) {
-    if ( arr[i].isAcronym() ) {
-      arr.remove( i );
+function carefulLowercase( str ) {
+  const words = str.split( /\s+/g );
+  
+  for ( let i = 0; i < words.length; i++ ) {
+    let word = words[ i ];
+    if ( !word.isAcronym() ) {
+      words[i] = word.toLowerCase();
     }
   }
+
+  return words.join( " " );
 } // End of removeAcronyms
 
 /**
@@ -142,7 +147,7 @@ function calcRelevance( entry ) {
 /**
  * Generates the normalized list of phrase data, printing it to the console to be copied.
  */
-function printNormalizedPhraseData() {
+function printPhraseData() {
   // Start the list
   const lookup = [];
 
@@ -153,12 +158,12 @@ function printNormalizedPhraseData() {
     const lookupObj = {};
 
     const lemms = [];
-    lemms.push( normalize(entry.phrase) );
-    lemms.push( normalize(entry.meaning) );
+    lemms.push( carefulLowercase(normalize(entry.phrase)) );
+    lemms.push( carefulLowercase(normalize(entry.meaning)) );
 
     // Only if category exists
     if ( Object.hasOwn(entry, "category") ) {
-      lemms.push( normalize(entry.category) );
+      lemms.push( carefulLowercase(normalize(entry.category)) );
     }
 
     lookupObj.lemmas = lemms;
@@ -196,7 +201,6 @@ function printNormalizedPhraseData() {
  * @return {Array} A list of indices / what was checked as objects
  */
 function searchForReferences( lookup, text ) {
-  
   const thingsMatched = [];
 
   let thingsToCheck = [ lookup.lemmas[0] ];
@@ -247,27 +251,24 @@ function searchForReferences( lookup, text ) {
 // **************************************************
 
 /**
- * Normalizes the given text, removing capitalization and punctuation
+ * Normalizes the given text, removing capitalization and excess whitespace
  * @param {String} text
  * @return {String} The normalized text
  */
 function normalize( text ) {
   // Remove all punctuation and 's-s
-  text = text.replaceAll( /([\[\],.()\/\\\'\"]||\'s)/g, "" );
+  // text = text.replaceAll( /([\[\],.()\/\\\'\"]||\'s)/g, "" );
   
   // Make an array of all the words, without surrounding spaces
   const words = text.split( /\s+/ );
   // Redundancy is key when you don't know what you are doing
   const trimmed = words.map( (each) => each.trim() );
 
-  // Remove capitalization for all words except acronyms
-  const normalized = trimmed.map( (word) => {
-    if ( !word.isAcronym() ) { return word.toLowerCase(); }
-    else { return word; }
-  } );
+  // Remove capitalization for all words
+  // const normalized = trimmed.map( (word) => word.toLowerCase() );
 
   // Return the line, a string once more
-  return normalized.join(" ").trim();
+  return /*normalized*/ trimmed.join(" ");
 }
 
 /**
@@ -297,7 +298,7 @@ function fetchPhrase( index ) {
  *     index: the starting index of the match in text
  *     span: how many letters the match covers
  */
-function findMatches( text ) {
+function generateAnnotationData( text ) {
   
   const matches = [];
 
@@ -308,7 +309,7 @@ function findMatches( text ) {
     const locations = [];
 
     // Find all occurences of lookup information
-    let matchBatch = searchForReferences( currLookup, text );
+    let matchBatch = searchForReferences( currLookup, carefulLowercase(normalize(text)) );
     
     // Save each occurence as a separate location
     for ( let matchIdx = 0; matchIdx < matchBatch.length; matchIdx++ ) {
@@ -334,14 +335,14 @@ function findMatches( text ) {
   // console.log( "nDNormalized Text: " + text );
 
   return matches;
-} // End findMatches
+} // End generateAnnotationData
 
 export default {
   "phrasesLength": phraseData.length,
   "lookupLength" : lookupData.length,
-  printNormalizedPhraseData,          // Used for setup
+  printPhraseData,          // Used for setup
   fetchPhrase,
   fetchLookup,
   normalize,
-  findMatches
+  generateAnnotationData
 };
